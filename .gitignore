@@ -1,0 +1,10 @@
+# I-exclude ang mga auto-generated na files at folder
+build/
+dist/
+nbproject/private/
+
+# I-exclude ang mga temporary OS logs at system trash
+*.log
+.DS_Store
+Thumbs.db
+
