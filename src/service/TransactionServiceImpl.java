@@ -7,7 +7,6 @@ import util.ConsoleMenu;
 public class TransactionServiceImpl implements TransactionService {
     private InventoryService invService;
 
-    // Constructor to inject the InventoryService dependency
     public TransactionServiceImpl(InventoryService invService) {
         this.invService = invService;
     }
@@ -17,8 +16,8 @@ public class TransactionServiceImpl implements TransactionService {
         Product p = invService.getProductById(productId);
         if (p != null && p.getQuantity() >= qty) {
             double total = p.getPrice() * qty;
-            p.setQuantity(p.getQuantity() - qty); // Deduct inventory stock
-            DataStorage.totalSales += total;      // Update cumulative gross revenue
+            p.setQuantity(p.getQuantity() - qty); 
+            DataStorage.totalSales += total;     
             DataStorage.totalCashSales += total;
             
             System.out.printf("Transaction Authorized: PHP %.2f rendered for %d units of %s.\n", total, qty, p.getName());
@@ -29,7 +28,6 @@ public class TransactionServiceImpl implements TransactionService {
     
     @Override
     public void viewSalesAnalytics() {
-        // Loop to count low stock products
         int lowStockCount = 0;
         for (Product p : repository.DataStorage.products) {
             if (p.isLowStock()) {

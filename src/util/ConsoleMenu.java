@@ -6,10 +6,8 @@ public class ConsoleMenu {
     public static void printHeader(String title) {
         System.out.println("\n===========================================================");
         
-        // Get spaces to center the text
         int spacesNeeded = (LINE_LENGTH - title.length()) / 2;
         
-        // Print spaces before title
         for (int i = 0; i < spacesNeeded; i++) {
             System.out.print(" ");
         }

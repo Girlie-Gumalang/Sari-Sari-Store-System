@@ -46,7 +46,7 @@ public class MainApp {
         }
     }
 
-    // --- SECURITY LAYER (ADMIN LOGIN) ---
+    // ADMIN LOGIN
     private static void handleAdminLogin() {
         System.out.println("\n----------------------- ADMIN LOGIN -----------------------");
         System.out.print("Username: ");
@@ -62,7 +62,7 @@ public class MainApp {
         }
     }
 
-    // --- VIEW LAYER: ADMIN MENU (CRUD, RESTOCK, ANALYTICS, UTANG) ---
+    // ADMIN MENU (CRUD, RESTOCK, ANALYTICS, UTANG)
     private static void showAdminMenu() {
         while (true) {
             ConsoleMenu.printHeader("ADMIN DASHBOARD");
@@ -142,13 +142,13 @@ public class MainApp {
         }
     }
     
-    // --- VIEW LAYER: CASHIER / CUSTOMER MODE ---
+    // CASHIER / CUSTOMER MODE 
     private static void showCashierMenu() {
         ConsoleMenu.printHeader("CASHIER TERMINAL");
         inventoryService.viewAllProducts(); 
         
         System.out.print("\nEnter Product ID to buy (or type 'BACK' to exit): ");
-        String buyId = getValidStringInput(); // Fixed: Ginamit ang helper imbes na scanner.nextLine()
+        String buyId = getValidStringInput(); 
         
         if (buyId.equalsIgnoreCase("BACK")) return;
         
@@ -163,13 +163,13 @@ public class MainApp {
         int qtyToBuy = getValidIntegerInput();
         
         System.out.print("Select Type (CASH / UTANG): ");
-        String paymentType = getValidStringInput(); // Fixed: Ginamit ang helper imbes na scanner.nextLine()
+        String paymentType = getValidStringInput();
         
         if (paymentType.equalsIgnoreCase("CASH")) {
             transactionService.processCashCheckout(buyId, qtyToBuy);
         } else if (paymentType.equalsIgnoreCase("UTANG")) {
             System.out.print("Enter Customer Name: ");
-            String sukiName = getValidStringInput(); // Fixed: Ginamit ang helper imbes na scanner.nextLine()
+            String sukiName = getValidStringInput(); 
             
             utang.addUtang(sukiName, buyId, qtyToBuy);
         } else {
@@ -177,17 +177,17 @@ public class MainApp {
         }
     }
 
-    // --- CORE LOGIC: SALES ANALYTICS ---
+    // SALES ANALYTICS 
     private static void showSalesAnalytics() {
         transactionService.viewSalesAnalytics(); 
     }
     
-    // --- CORE LOGIC: UTANG BOOK ---
+    // UTANG BOOK
     private static void showUtangBook() {
         utang.viewUtangBook();
     }
 
-    // --- DATA VALIDATION HELPERS (Para Iwas System Crash) ---
+    // DATA VALIDATION HELPERS 
     private static int getValidIntegerInput() {
         while (true) {
             try {

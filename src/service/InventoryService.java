@@ -3,11 +3,11 @@ package service;
 import model.Product;
 
 public interface InventoryService {
-    void addProduct(Product product);                 // CREATE
-    void viewAllProducts();                           // READ
-    void updateProductPrice(String id, double price); // UPDATE (Price)
-    void restockProduct(String id, int qty);          // UPDATE (Restock)
-    void removeProduct(String id);                    // DELETE
+    void addProduct(Product product);                
+    void viewAllProducts();                           
+    void updateProductPrice(String id, double price); 
+    void restockProduct(String id, int qty);       
+    void removeProduct(String id);               
     
     Product getProductById(String id);
 }

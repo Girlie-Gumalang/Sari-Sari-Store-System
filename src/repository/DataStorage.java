@@ -17,11 +17,9 @@ public class DataStorage {
     public static double totalCreditCollected = 0.0;
 
     static {
-        // valid login credentials
         users.add(new User("admin", "1234", "ADMIN"));
         users.add(new User("cashier", "cashier123", "CASHIER"));
         
-        // initial products
         products.add(new Product("P01", "Kopiko", 12.00, 20));
         products.add(new Product("P02", "Sardinas", 24.50, 4)); 
     }

@@ -20,13 +20,11 @@ public class InventoryServiceImpl implements InventoryService {
     
     @Override
     public void viewAllProducts() {
-        // Adjusted  to perfectly match the width of the rows
         System.out.println("\n--------------------------------------------------------------------------");
         System.out.println("| No. | ID     | PRODUCT NAME         | UNIT PRICE  | STOCK STATUS         |");
         System.out.println("--------------------------------------------------------------------------");
         
         if (DataStorage.products.isEmpty()) {
-            // Adjusted spacing to keep text centered inside the 74-character width table
             System.out.println("|                  Inventory registry is currently empty.                |");
         } else {
             int rowNum = 1; 
@@ -66,7 +64,6 @@ public class InventoryServiceImpl implements InventoryService {
     public void removeProduct(String id) {
         boolean removed = false;
         
-        // Loop until sa dulo ng ArrayList
         for (int i = 0; i < DataStorage.products.size(); i++) {
             Product p = DataStorage.products.get(i);
             

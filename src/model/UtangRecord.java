@@ -8,7 +8,7 @@ public class UtangRecord {
     public UtangRecord(String customerName, double amount) {
         this.customerName = customerName;
         this.amount = amount;
-        this.status = "UNPAID"; // Default status kapag nangutang
+        this.status = "UNPAID"; 
     }
 
     public String getCustomerName() { return customerName; }
@@ -24,13 +24,11 @@ public class UtangRecord {
     public double payUtang(double payment) {
         double sukli = 0.0;
         
-        // Kung sumobra ang ibinayad sa natitirang utang
         if (payment > this.amount) {
-            sukli = payment - this.amount; // Compute change
-            this.amount = 0;               // Bayad na ang utang, balik sa 0
+            sukli = payment - this.amount; 
+            this.amount = 0;               
             this.status = "PAID";
         } else {
-            // Kung eksakto o kulang ang ibinayad
             this.amount -= payment;
             if (this.amount == 0) {
                 this.status = "PAID";

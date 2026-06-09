@@ -19,7 +19,6 @@ public class UtangServiceImpl implements UtangService {
             double total = p.getPrice() * qty;
             p.setQuantity(p.getQuantity() - qty);
             
-            // Check for existing credit record
             for (UtangRecord u : DataStorage.utangBook) {
                 if (u.getCustomerName().equalsIgnoreCase(customerName)) {
                     u.addUtang(total);
@@ -27,7 +26,6 @@ public class UtangServiceImpl implements UtangService {
                     return;
                 }
             }
-            // Register as a new customer entry if record does not exist
             DataStorage.utangBook.add(new UtangRecord(customerName, total));
             System.out.println("Success: New credit account registered for " + customerName);
         } else {
@@ -50,7 +48,6 @@ public class UtangServiceImpl implements UtangService {
     
     @Override
     public void payUtang(String customerName, double amount) {
-        // Utilizing index-based loop for safe object termination during list traversal
         for (int i = 0; i < DataStorage.utangBook.size(); i++) {
             UtangRecord u = DataStorage.utangBook.get(i);
             
@@ -64,7 +61,6 @@ public class UtangServiceImpl implements UtangService {
                 double kasalukuyangUtang = u.getAmount(); 
                 double sukli = u.payUtang(amount); 
                 
-                // Update cumulative gross revenue analytics
                 double totoongPumasokNaPera = (sukli > 0) ? kasalukuyangUtang : amount;
                 DataStorage.totalSales += totoongPumasokNaPera; 
                 
@@ -76,11 +72,9 @@ public class UtangServiceImpl implements UtangService {
                 }
                 
                 if (u.getStatus().equals("PAID")) {
-                    // Account record termination upon full liability settlement
                     DataStorage.utangBook.remove(i);
                     System.out.println("System Notification: Credit account record for " + customerName + " has been terminated due to full settlement.");
                 } else {
-                    // Account statement notification for partial balance settlement
                     System.out.printf("   Remaining Balance: PHP %.2f | Status: %s\n", u.getAmount(), u.getStatus());
                 }
                 return;
