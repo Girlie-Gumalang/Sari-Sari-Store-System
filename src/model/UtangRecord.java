@@ -22,11 +22,11 @@ public class UtangRecord {
     public void setStatus(String status) { this.status = status; }
     
     public double payUtang(double payment) {
-        double sukli = 0.0;
+        double change = 0.0;
         
         if (payment > this.amount) {
-            sukli = payment - this.amount; 
-            this.amount = 0;               
+            change = payment - this.amount; 
+            this.amount = 0;                
             this.status = "PAID";
         } else {
             this.amount -= payment;
@@ -35,6 +35,6 @@ public class UtangRecord {
             }
         }
         
-        return sukli; 
+        return change; 
     }
 }
