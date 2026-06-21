@@ -1,25 +1,31 @@
 package main;
 
+import config.DBConnection;
 import util.ConsoleMenu;
 import model.Product;
-import model.UtangRecord;
-import repository.DataStorage;
+import model.User;
 import service.InventoryService;
 import service.InventoryServiceImpl;
 import service.UtangService;
 import service.UtangServiceImpl;
 import service.TransactionService;
 import service.TransactionServiceImpl;
+import service.AuthService;
+import service.AuthServiceImpl;
 
 import java.util.Scanner;
 
 public class MainApp {
     private static final Scanner scanner = new Scanner(System.in);
     private static final InventoryService inventoryService = new InventoryServiceImpl(); 
-    private static final UtangService utang = new UtangServiceImpl(inventoryService);
-    private static TransactionService transactionService = new TransactionServiceImpl(inventoryService);
+    private static final UtangService utangService = new UtangServiceImpl(inventoryService);
+    private static final TransactionService transactionService = new TransactionServiceImpl(inventoryService);
+    private static final AuthService authService = new AuthServiceImpl();
 
     public static void main(String[] args) {
+        
+        DBConnection.initializeDatabase();
+         
         while (true) {
             ConsoleMenu.printHeader("SARI-SARI STORE SYSTEM");
             System.out.println("[1] Admin Dashboard");
@@ -34,10 +40,10 @@ public class MainApp {
                     handleAdminLogin();
                     break;
                 case 2:
-                    showCashierMenu();
+                    handleCashierLogin();
                     break;
                 case 3:
-                    System.out.println("System closed.");
+                    System.out.println("System closed!");
                     System.exit(0);
                     break;
                 default:
@@ -51,14 +57,17 @@ public class MainApp {
         System.out.println("\n----------------------- ADMIN LOGIN -----------------------");
         System.out.print("Username: ");
         String username = getValidStringInput();
+        
         System.out.print("Password: ");
         String password = getValidStringInput();
 
-        if (username.equals("admin") && password.equals("1234")) {
-            System.out.println("Login success!");
+        User user = authService.login(username, password);
+
+        if (user != null && user.getRole().equalsIgnoreCase("ADMIN")) {
+            System.out.println("\nLogin success! Welcome, Admin.");
             showAdminMenu();
         } else {
-            System.out.println("Login failed! Wrong credentials.");
+            System.out.println("\nLogin failed! Wrong credentials or unauthorized access.");
         }
     }
 
@@ -92,6 +101,7 @@ public class MainApp {
                     
                     System.out.print("Enter Price (PHP): ");
                     double price = getValidDoubleInput();
+                    
                     System.out.print("Enter Stock Quantity: ");
                     int qty = getValidIntegerInput();
                     
@@ -100,6 +110,7 @@ public class MainApp {
                 case 3:
                     System.out.print("Enter Product ID: ");
                     String uId = getValidStringInput();
+                    
                     System.out.print("Enter New Price: ");
                     double newPrice = getValidDoubleInput();
                     
@@ -108,6 +119,7 @@ public class MainApp {
                 case 4:
                     System.out.print("Enter Product ID: ");
                     String rId = getValidStringInput(); 
+                    
                     System.out.print("Enter Quantity to Add: ");
                     int addedQty = getValidIntegerInput();
                     
@@ -127,14 +139,15 @@ public class MainApp {
                     break;
                 case 8: 
                     System.out.print("Enter Customer Name: ");
-                    String sukiName = getValidStringInput(); 
-                    System.out.print("Enter Amount Paid (PHP): ");
-                    double bayad = getValidDoubleInput(); 
+                    String customerName = getValidStringInput(); 
                     
-                    utang.payUtang(sukiName, bayad); 
+                    System.out.print("Enter Amount Paid (PHP): ");
+                    double paymentAmount = getValidDoubleInput(); 
+                    
+                    utangService.payUtang(customerName, paymentAmount); 
                     break;
                 case 9: 
-                    System.out.println("Logged out.");
+                    System.out.println("Logged out from Admin Dashboard.");
                     return; 
                 default:
                     System.out.println("Invalid choice! Select 1 to 9.");
@@ -142,41 +155,65 @@ public class MainApp {
         }
     }
     
-    // CASHIER / CUSTOMER MODE 
-    private static void showCashierMenu() {
-        ConsoleMenu.printHeader("CASHIER TERMINAL");
-        inventoryService.viewAllProducts(); 
+    // CASHIER LOGIN
+    private static void handleCashierLogin() {
+        System.out.println("\n----------------------- CASHIER LOGIN -----------------------");
+        System.out.print("Username: ");
+        String username = getValidStringInput();
         
-        System.out.print("\nEnter Product ID to buy (or type 'BACK' to exit): ");
-        String buyId = getValidStringInput(); 
-        
-        if (buyId.equalsIgnoreCase("BACK")) return;
-        
-        Product targetProduct = inventoryService.getProductById(buyId);
-        
-        if (targetProduct == null) {
-            System.out.println("Error: Product not found!");
-            return;
-        }
-        
-        System.out.print("Enter Quantity for " + targetProduct.getName() + ": ");
-        int qtyToBuy = getValidIntegerInput();
-        
-        System.out.print("Select Type (CASH / UTANG): ");
-        String paymentType = getValidStringInput();
-        
-        if (paymentType.equalsIgnoreCase("CASH")) {
-            transactionService.processCashCheckout(buyId, qtyToBuy);
-        } else if (paymentType.equalsIgnoreCase("UTANG")) {
-            System.out.print("Enter Customer Name: ");
-            String sukiName = getValidStringInput(); 
-            
-            utang.addUtang(sukiName, buyId, qtyToBuy);
+        System.out.print("Password: ");
+        String password = getValidStringInput();
+
+        User user = authService.login(username, password);
+
+        if (user != null && user.getRole().equalsIgnoreCase("CASHIER")) {
+            System.out.println("Login success! Welcome, Cashier.");
+            showCashierMenu();
         } else {
-            System.out.println("Error: Invalid option!");
+            System.out.println("Login failed! Invalid credentials.");
         }
     }
 
+    // CASHIER / CUSTOMER MODE 
+    private static void showCashierMenu() {
+        while (true) {
+            ConsoleMenu.printHeader("CASHIER TERMINAL");
+            inventoryService.viewAllProducts(); 
+            
+            System.out.print("\nEnter Product ID to buy (or type 'BACK' to logout): ");
+            String buyId = getValidStringInput(); 
+            
+            if (buyId.equalsIgnoreCase("BACK")) {
+                System.out.println("Logged out from Cashier Terminal.");
+                return;
+            }
+            
+            Product targetProduct = inventoryService.getProductById(buyId);
+            
+            if (targetProduct == null) {
+                System.out.println("Error: Product not found!");
+                continue; 
+            }
+            
+            System.out.print("Enter Quantity for " + targetProduct.getName() + ": ");
+            int qtyToBuy = getValidIntegerInput();
+            
+            System.out.print("Select Type (CASH / UTANG): ");
+            String paymentType = getValidStringInput();
+            
+            if (paymentType.equalsIgnoreCase("CASH")) {
+                transactionService.processCashCheckout(buyId, qtyToBuy);
+            } else if (paymentType.equalsIgnoreCase("UTANG")) {
+                System.out.print("Enter Customer Name: ");
+                String customerName = getValidStringInput(); 
+                
+                utangService.addUtang(customerName, buyId, qtyToBuy);
+            } else {
+                System.out.println("Error: Invalid option! Transaction cancelled.");
+            }
+        }
+    }
+    
     // SALES ANALYTICS 
     private static void showSalesAnalytics() {
         transactionService.viewSalesAnalytics(); 
@@ -184,7 +221,7 @@ public class MainApp {
     
     // UTANG BOOK
     private static void showUtangBook() {
-        utang.viewUtangBook();
+        utangService.viewUtangBook();
     }
 
     // DATA VALIDATION HELPERS 
