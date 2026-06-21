@@ -1,93 +1,102 @@
 package service;
 
 import model.Product;
-import repository.DataStorage;
+import repository.ProductRepository;
+import java.util.List;
 
 public class InventoryServiceImpl implements InventoryService {
 
-    @Override
-    public void addProduct(Product product) {
-        for (Product p : repository.DataStorage.products) {
-            if (p.getId().equalsIgnoreCase(product.getId())) {
-                System.out.println("\nProduct ID '" + product.getId() + "' already exists in the database registry!");
-                return; 
-            }
-        }
-        
-        repository.DataStorage.products.add(product);
-        System.out.println("Product entry added successfully!");
-    }
-    
+    private ProductRepository productRepo = new ProductRepository();
+
     @Override
     public void viewAllProducts() {
-        System.out.println("\n--------------------------------------------------------------------------");
-        System.out.println("| No. | ID     | PRODUCT NAME         | UNIT PRICE  | STOCK STATUS         |");
-        System.out.println("--------------------------------------------------------------------------");
-        
-        if (DataStorage.products.isEmpty()) {
-            System.out.println("|                  Inventory registry is currently empty.                |");
+        List<Product> products = productRepo.findAll();
+
+        String line = "-------------------------------------------------------------------------------";
+
+        System.out.println("\n" + line);
+        System.out.println("| No. | ID     | PRODUCT NAME         | UNIT PRICE      | STOCK STATUS        |");
+        System.out.println(line);
+
+        if (products.isEmpty()) {
+            System.out.printf("| %-75s |\n", "Database is currently empty. Please add a product first.");
         } else {
-            int rowNum = 1; 
-            for (Product p : DataStorage.products) {
-                p.displayDetails(rowNum); 
-                rowNum++; 
+            int counter = 1; 
+            
+            for (Product p : products) {
+                String stockMsg;
+                if (p.getQuantity() <= 5) {
+                    stockMsg = String.format("%-4d [LOW STOCK!]", p.getQuantity());
+                } else {
+                    stockMsg = String.valueOf(p.getQuantity());
+                }
+
+                System.out.printf("| %-3d | %-6s | %-20s | PHP %-11.2f | %-19s |\n",
+                        counter, p.getId(), p.getName(), p.getPrice(), stockMsg);
+                        
+                counter++; 
             }
         }
-        System.out.println("--------------------------------------------------------------------------");
+        System.out.println(line);
+    }
+
+    @Override
+    public void addProduct(Product product) {
+        
+        product.setId(product.getId().toUpperCase());
+        
+        // check if may same ID sa database
+        Product existing = productRepo.findById(product.getId());
+        if (existing != null) {
+            System.out.println("[Error]: ID already exists in the database! Please use a different ID.");
+            return;
+        }
+        
+        productRepo.save(product);
     }
 
     @Override
     public void updateProductPrice(String id, double price) {
-        for (Product p : DataStorage.products) {
-            if (p.getId().equalsIgnoreCase(id)) {
-                p.setPrice(price);
-                System.out.println("Success: Unit price for " + p.getName() + " updated to PHP " + price);
-                return;
-            }
+        id = id.toUpperCase(); 
+        
+        Product existing = productRepo.findById(id);
+        if (existing == null) {
+            System.out.println("[Error]: Product not found in the database!");
+            return;
         }
-        System.out.println("System Error: Product ID reference mismatch: " + id);
+        productRepo.updatePrice(id, price);
     }
 
     @Override
-    public void restockProduct(String id, int qty) {
-        for (Product p : DataStorage.products) {
-            if (p.getId().equalsIgnoreCase(id)) {
-                p.setQuantity(p.getQuantity() + qty);
-                System.out.println("Success: Replenishment successful. Current stock for " + p.getName() + " is " + p.getQuantity());
-                return;
-            }
+    public void restockProduct(String id, int addedQty) {
+        id = id.toUpperCase();
+        
+        Product existing = productRepo.findById(id);
+        if (existing == null) {
+            System.out.println("[Error]: Product not found in the database!");
+            return;
         }
-        System.out.println("System Error: Product ID reference mismatch: " + id);
+        
+        int newQty = existing.getQuantity() + addedQty;
+        productRepo.updateQuantity(id, newQty);
     }
-    
+
     @Override
     public void removeProduct(String id) {
-        boolean removed = false;
+        id = id.toUpperCase();
         
-        for (int i = 0; i < DataStorage.products.size(); i++) {
-            Product p = DataStorage.products.get(i);
-            
-            if (p.getId().equalsIgnoreCase(id)) {
-                DataStorage.products.remove(i);
-                removed = true;
-                break; 
-            }
+        Product existing = productRepo.findById(id);
+        if (existing == null) {
+            System.out.println("[Error]: Product not found in the database!");
+            return;
         }
-
-        if (removed) {
-            System.out.println("Product entry terminated from the database successfully.");
-        } else {
-            System.out.println("System Error: Product ID reference mismatch: " + id);
-        }
+        productRepo.delete(id);
     }
-    
+
     @Override
     public Product getProductById(String id) {
-        for (Product p : DataStorage.products) {
-            if (p.getId().equalsIgnoreCase(id)) {
-                return p; 
-            }
-        }
-        return null; 
+        id = id.toUpperCase();
+        
+        return productRepo.findById(id);
     }
 }
