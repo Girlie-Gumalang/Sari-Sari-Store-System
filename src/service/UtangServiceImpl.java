@@ -1,85 +1,126 @@
 package service;
 
+import config.DBConnection;
 import model.Product;
-import model.UtangRecord;
-import repository.DataStorage;
-import util.ConsoleMenu;
+import java.sql.*;
 
 public class UtangServiceImpl implements UtangService {
-    private InventoryService invService;
 
-    public UtangServiceImpl(InventoryService invService) {
-        this.invService = invService;
+    private InventoryService inventoryService;
+
+    public UtangServiceImpl(InventoryService inventoryService) {
+        this.inventoryService = inventoryService;
     }
 
     @Override
-    public void addUtang(String customerName, String productId, int qty) {
-        Product p = invService.getProductById(productId);
-        if (p != null && p.getQuantity() >= qty) {
-            double total = p.getPrice() * qty;
-            p.setQuantity(p.getQuantity() - qty);
-            
-            for (UtangRecord u : DataStorage.utangBook) {
-                if (u.getCustomerName().equalsIgnoreCase(customerName)) {
-                    u.addUtang(total);
-                    System.out.println("Success: Balance appended to existing record for " + customerName);
-                    return;
+    public void addUtang(String customerName, String buyId, int qtyToBuy) {
+        customerName = customerName.toUpperCase();
+
+        Product p = inventoryService.getProductById(buyId);
+        if (p == null || p.getQuantity() < qtyToBuy) {
+            System.out.println("Error: Product not found or insufficient stock!");
+            return;
+        }
+
+        double total = p.getPrice() * qtyToBuy;
+        inventoryService.restockProduct(buyId, -qtyToBuy);
+
+        String txQuery = "INSERT INTO total_sales (product_id, product_name, quantity, grossSales, collected, type) VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(txQuery)) {
+            ps.setString(1, buyId);
+            ps.setString(2, p.getName());
+            ps.setInt(3, qtyToBuy);
+            ps.setDouble(4, total);
+            ps.setDouble(5, 0);
+            ps.setString(6, "UTANG");
+            ps.executeUpdate();
+        } catch (Exception e) {
+        }
+
+        String utangQuery = "INSERT INTO utang_records (customerName, amount, status) VALUES (?, ?, 'UNPAID') "
+                + "ON CONFLICT(customerName) DO UPDATE SET amount = amount + ?, status = 'UNPAID'";
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(utangQuery)) {
+            ps.setString(1, customerName);
+            ps.setDouble(2, total);
+            ps.setDouble(3, total);
+            ps.executeUpdate();
+            System.out.printf("Credit recorded for %s. Amount: PHP %.2f\n", customerName, total);
+        } catch (Exception e) {
+            System.out.println("Utang Record Error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void payUtang(String customerName, double amountPaid) {
+        customerName = customerName.toUpperCase();
+
+        String checkQuery = "SELECT amount, customerName FROM utang_records WHERE UPPER(customerName)=?";
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(checkQuery)) {
+
+            ps.setString(1, customerName);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                double currentBal = rs.getDouble("amount");
+                String exactDbName = rs.getString("customerName");
+                double newBal = currentBal - amountPaid;
+
+                if (newBal <= 0) {
+                    double change = Math.abs(newBal);
+
+                    String upQuery = "UPDATE utang_records SET amount = 0, status = 'PAID' WHERE customerName=?";
+                    PreparedStatement upPs = conn.prepareStatement(upQuery);
+                    upPs.setString(1, exactDbName);
+                    upPs.executeUpdate();
+
+                    System.out.printf("%s has fully paid! Change: PHP %.2f\n", customerName, change);
+                } else {
+                    String upQuery = "UPDATE utang_records SET amount=?, status = 'UNPAID' WHERE customerName=?";
+                    PreparedStatement upPs = conn.prepareStatement(upQuery);
+                    upPs.setDouble(1, newBal);
+                    upPs.setString(2, exactDbName);
+                    upPs.executeUpdate();
+
+                    System.out.printf("%s paid PHP %.2f. Remaining balance: PHP %.2f\n", customerName, amountPaid, newBal);
                 }
+            } else {
+                System.out.println("No credit record found for " + customerName);
             }
-            DataStorage.utangBook.add(new UtangRecord(customerName, total));
-            System.out.println("Success: New credit account registered for " + customerName);
-        } else {
-             System.out.println("Authorization Failed: Insufficient stock level or invalid Product ID reference.");
+        } catch (Exception e) {
+            System.out.println("Pay Utang Error: " + e.getMessage());
         }
     }
 
     @Override
     public void viewUtangBook() {
-        ConsoleMenu.printHeader("DIGITAL CREDIT LEDGER");
-        if (DataStorage.utangBook.isEmpty()) {
-            System.out.println("No outstanding accounts receivable detected.");
-            return;
-        }
-        for (UtangRecord u : DataStorage.utangBook) {
-            System.out.printf("Account: %-15s | Balance: PHP %.2f | Status: %s\n", 
-                    u.getCustomerName(), u.getAmount(), u.getStatus());
-        }
-    }
-    
-    @Override
-    public void payUtang(String customerName, double amount) {
-        for (int i = 0; i < DataStorage.utangBook.size(); i++) {
-            UtangRecord u = DataStorage.utangBook.get(i);
-            
-            if (u.getCustomerName().equalsIgnoreCase(customerName)) {
-                
-                if (u.getStatus().equals("PAID")) {
-                    System.out.println("Notice: Outstanding balance for " + customerName + " is already fully settled.");
-                    return;
-                }
-                
-                double kasalukuyangUtang = u.getAmount(); 
-                double sukli = u.payUtang(amount); 
-                
-                double totoongPumasokNaPera = (sukli > 0) ? kasalukuyangUtang : amount;
-                DataStorage.totalSales += totoongPumasokNaPera; 
-                
-                DataStorage.totalCreditCollected += totoongPumasokNaPera;
-                
-                System.out.println("Success: Payment processed for account holder: " + customerName);
-                if (sukli > 0) {
-                    System.out.printf("   Change Rendered: PHP %.2f\n", sukli);
-                }
-                
-                if (u.getStatus().equals("PAID")) {
-                    DataStorage.utangBook.remove(i);
-                    System.out.println("System Notification: Credit account record for " + customerName + " has been terminated due to full settlement.");
-                } else {
-                    System.out.printf("   Remaining Balance: PHP %.2f | Status: %s\n", u.getAmount(), u.getStatus());
-                }
-                return;
+        util.ConsoleMenu.printHeader("DIGITAL CREDIT LEDGER");
+        String query = "SELECT * FROM utang_records";
+
+        System.out.printf("%-20s %-15s %-10s\n", "Account:", "Balance:", "Status:");
+        System.out.println("---------------------------------------------------------");
+
+        try (Connection conn = DBConnection.getConnection();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+
+            boolean hasUtang = false;
+            while (rs.next()) {
+                hasUtang = true;
+                double bal = rs.getDouble("amount");
+                String status = rs.getString("status");
+
+                System.out.printf("%-20s PHP %-11.2f %-10s\n", rs.getString("customerName"), bal, status);
             }
+            if (!hasUtang) {
+                System.out.println("No pending credits!");
+            }
+            System.out.println("=========================================================");
+
+        } catch (Exception e) {
+            System.out.println("Utang Book Error: " + e.getMessage());
         }
-        System.out.println("System Error: Account holder name reference mismatch: " + customerName);
     }
 }
