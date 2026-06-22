@@ -13,11 +13,13 @@ A console-based Point of Sale (POS) and Inventory Management System built entire
 ## 📖 Documentation
 
 For a deep dive into the system's architecture and database structure:
-* **Physical ERD (`Sari-Sari Store System ERD.png`)** - The logical and physical database design mapping out the `users`, `products`, `total_sales`, and `utang_records` entities.
+* **Physical ERD** - The logical and physical database design mapping out the `users`, `products`, `total_sales`, and `utang_records` entities.
 * **License (`LICENSE`)** - Full details of the MIT open-source license.
 
-### Database Architecture
-![Sari-Sari Store ERD](Sari-Sari Store System ERD.png)
+### 🗂️ Database Architecture Diagram
+*(Click the image to view full size)*
+
+[![Sari-Sari Store ERD](Sari-Sari-Store-System-ERD.png)](Sari-Sari-Store-System-ERD.png)
 
 ## 🛠️ Setup & Installation
 
